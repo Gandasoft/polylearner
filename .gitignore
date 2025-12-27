@@ -2,5 +2,5 @@
 .env.*
 ./web/.env
 ./web/.env.*
-./web/node_modules
-./web/dist
+./web/node_modules/
+./web/dist/
