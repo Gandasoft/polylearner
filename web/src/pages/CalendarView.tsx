@@ -4,7 +4,7 @@ import { Menu, Share, RefreshCw, Calendar, BarChart3, CheckSquare, Settings, Pla
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { NewTaskDialog } from "@/components/dashboard/NewTaskDialog";
-import { getSchedule, WeekScheduleResponse, ScheduleBlock } from "@/lib/api";
+import { getCalendarEvents, CalendarEvent } from "@/lib/api";
 
 const weekDays = [
   { day: "MON", date: 23 },
@@ -17,31 +17,34 @@ const weekDays = [
 
 export default function CalendarView() {
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [scheduleData, setScheduleData] = useState<WeekScheduleResponse | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadSchedule();
+    loadCalendarEvents();
   }, []);
 
-  async function loadSchedule() {
+  async function loadCalendarEvents() {
     try {
       setLoading(true);
-      const data = await getSchedule();
-      setScheduleData(data);
-    } catch (error) {
-      console.error('Failed to load schedule:', error);
+      setError(null);
+      const data = await getCalendarEvents();
+      setCalendarEvents(data.events);
+    } catch (error: any) {
+      console.error('Failed to load calendar events:', error);
+      setError(error.message || 'Failed to load calendar events');
     } finally {
       setLoading(false);
     }
   }
 
-  // Filter schedule blocks for today
-  const todaySchedule = scheduleData?.schedule.filter(block => {
-    const blockDate = new Date(block.start_time);
-    return blockDate.toDateString() === selectedDate.toDateString();
-  }) || [];
+  // Filter events for selected date
+  const todaySchedule = calendarEvents.filter(event => {
+    const eventDate = new Date(event.start_time);
+    return eventDate.toDateString() === selectedDate.toDateString();
+  });
 
   const formatTime = (isoTime: string) => {
     const date = new Date(isoTime);
@@ -76,13 +79,22 @@ export default function CalendarView() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="p-2 text-muted-foreground hover:text-foreground">
+            <button 
+              type="button"
+              className="p-2 text-muted-foreground hover:text-foreground"
+            >
               <Share className="w-5 h-5" />
             </button>
             <button 
-              className="p-2 bg-primary rounded-full text-primary-foreground"
-              onClick={loadSchedule}
+              type="button"
+              className="p-2 bg-primary rounded-full text-primary-foreground hover:bg-primary/90 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                loadCalendarEvents();
+              }}
               disabled={loading}
+              title="Refresh from Google Calendar"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -122,34 +134,41 @@ export default function CalendarView() {
           <div className="space-y-4">
             {loading ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Loading schedule...</p>
+                <p className="text-muted-foreground">Loading calendar events...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-destructive mb-2">{error}</p>
+                <Button onClick={loadCalendarEvents} variant="outline" size="sm">
+                  Try Again
+                </Button>
               </div>
             ) : todaySchedule.length > 0 ? (
-              todaySchedule.map((block) => (
-                <div key={`${block.task_id}-${block.start_time}`} className="flex gap-3">
+              todaySchedule.map((event) => (
+                <div key={event.event_id} className="flex gap-3">
                   {/* Time */}
                   <div className="w-12 text-right">
-                    <span className="text-xs text-muted-foreground">{formatTime(block.start_time)}</span>
+                    <span className="text-xs text-muted-foreground">{formatTime(event.start_time)}</span>
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 bg-card rounded-2xl p-4 border border-border">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex gap-2">
-                        <span className={`text-xs px-2 py-0.5 rounded font-medium uppercase ${getCategoryColor(block.category)}`}>
-                          {block.category}
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium uppercase ${getCategoryColor(event.category)}`}>
+                          {event.category}
                         </span>
                         <span className="text-xs px-2 py-0.5 rounded font-medium bg-secondary text-foreground">
-                          {block.duration_hours}h
+                          {event.duration_hours}h
                         </span>
                       </div>
                       <button className="text-muted-foreground hover:text-foreground">
                         <MoreHorizontal className="w-4 h-4" />
                       </button>
                     </div>
-                    <h3 className="font-semibold text-foreground mb-1">{block.task_title}</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{event.task_title}</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      {formatTime(block.start_time)} - {formatTime(block.end_time)}
+                      {formatTime(event.start_time)} - {formatTime(event.end_time)}
                     </p>
                     <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-lg">
                       <Play className="w-3.5 h-3.5" />
@@ -171,38 +190,20 @@ export default function CalendarView() {
             )}
           </div>
 
-          {/* AI Suggestions */}
-          {scheduleData?.recommendations && scheduleData.recommendations.length > 0 && (
-            <div className="mt-4 ml-14 bg-secondary/50 rounded-xl p-4 border border-primary/30">
-              <div className="flex items-start gap-2 mb-2">
-                <span className="text-primary text-lg">✨</span>
-                <div>
-                  <span className="text-xs font-medium text-primary">AI Suggestion</span>
-                  <p className="text-sm text-foreground">{scheduleData.recommendations[0].suggestion}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{scheduleData.recommendations[0].reason}</p>
-                </div>
-              </div>
-              <div className="flex gap-3 ml-6">
-                <button className="text-sm text-primary hover:underline font-medium">View All</button>
-                <button className="text-sm text-muted-foreground hover:text-foreground">Dismiss</button>
-              </div>
-            </div>
-          )}
-
-          {/* Cognitive Tax Score */}
-          {scheduleData && (
+          {/* Summary Stats */}
+          {!loading && !error && calendarEvents.length > 0 && (
             <div className="mt-4 ml-14 bg-card rounded-xl p-4 border border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase">Cognitive Tax Score</p>
+                  <p className="text-xs text-muted-foreground uppercase">Total Events</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {(scheduleData.cognitive_tax_score * 100).toFixed(0)}%
+                    {calendarEvents.length}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Total Hours</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {scheduleData.total_hours.toFixed(1)}h
+                    {calendarEvents.reduce((sum, e) => sum + e.duration_hours, 0).toFixed(1)}h
                   </p>
                 </div>
               </div>
@@ -241,7 +242,7 @@ export default function CalendarView() {
         </div>
       </nav>
 
-      <NewTaskDialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen} onTaskCreated={loadSchedule} />
+      <NewTaskDialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen} onTaskCreated={loadCalendarEvents} />
     </div>
   );
 }

@@ -296,6 +296,46 @@ polylearner/
 - MongoDB runs without authentication (configure in production)
 - Validate all inputs before persisting to database
 
+### Google Calendar Integration
+
+**Required OAuth Scopes:**
+When setting up Google OAuth, make sure to include these scopes for calendar integration:
+- `https://www.googleapis.com/auth/userinfo.profile`
+- `https://www.googleapis.com/auth/userinfo.email`
+- `https://www.googleapis.com/auth/calendar` (for calendar read/write access)
+- `https://www.googleapis.com/auth/calendar.events` (for event creation)
+
+**Auto-Scheduling:**
+Tasks are automatically scheduled to your Google Calendar when created or during onboarding:
+- Checks existing calendar events to avoid conflicts
+- Finds free time slots in 30-minute increments
+- Respects work hours (9 AM - 5 PM)
+- Schedules weekdays only
+- Prioritizes high-priority tasks first
+- Adds 1-hour buffer between tasks
+
+**Handling Calendar Permission Errors:**
+If you see "Calendar Access Required" notifications:
+1. **Sign out** of the application
+2. **Sign back in** with Google
+3. **Grant calendar permissions** when prompted by Google OAuth
+4. If you previously denied permissions, you may need to:
+   - Go to [Google Account Permissions](https://myaccount.google.com/permissions)
+   - Remove PolyLearner access
+   - Sign in again and grant all requested permissions
+
+**Common Issues:**
+- **403 Forbidden Error**: The user hasn't granted calendar access. Follow the steps above to re-authenticate.
+- **Token Expiry**: Access tokens expire after a certain time. Implement token refresh flow for production use.
+- **No Free Slots Found**: If the system can't find a free slot within 30 days, it will notify you. Consider clearing some calendar events or manually scheduling the task.
+
+**Testing Calendar Integration:**
+1. Ensure your Google OAuth app is configured with calendar scopes
+2. User must grant calendar permissions during sign-in
+3. Tasks will be automatically scheduled to Google Calendar when created
+4. Check logs for detailed error messages if scheduling fails
+5. Use the Calendar view to see all scheduled events
+
 ## 🐛 Troubleshooting
 
 ### MongoDB Connection Fails

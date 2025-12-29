@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { createTask, TaskCreate } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewTaskDialogProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface NewTaskDialogProps {
 
 export function NewTaskDialog({ open, onOpenChange, onTaskCreated }: NewTaskDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<TaskCreate>>({
     title: "",
     category: "admin",
@@ -32,7 +34,24 @@ export function NewTaskDialog({ open, onOpenChange, onTaskCreated }: NewTaskDial
 
     try {
       setLoading(true);
-      await createTask(formData as TaskCreate);
+      const response = await createTask(formData as TaskCreate);
+      
+      // Check for calendar permission errors
+      if (response.calendar_scheduling?.error) {
+        toast({
+          title: "Calendar Access Required",
+          description: "Please sign out and sign back in, granting calendar permissions to enable auto-scheduling.",
+          variant: "destructive",
+          duration: 6000,
+        });
+      } else if (response.calendar_scheduling?.scheduled) {
+        toast({
+          title: "Task Scheduled",
+          description: `Task successfully scheduled on your calendar for ${new Date(response.calendar_scheduling.scheduled[0]?.start_time || '').toLocaleString()}.`,
+          duration: 4000,
+        });
+      }
+      
       setFormData({
         title: "",
         category: "admin",
@@ -47,7 +66,11 @@ export function NewTaskDialog({ open, onOpenChange, onTaskCreated }: NewTaskDial
       }
     } catch (error) {
       console.error("Failed to create task:", error);
-      alert("Failed to create task. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

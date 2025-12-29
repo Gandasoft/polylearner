@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from pydantic import BaseModel, Field, EmailStr
 
@@ -128,6 +128,8 @@ class ScheduleBlock(BaseModel):
     start_time: str
     end_time: str
     duration_hours: float
+    scheduling_reason: Optional[str] = None
+    embedding_sample: Optional[List[float]] = None
 
 
 class WeekScheduleResponse(BaseModel):
@@ -136,3 +138,56 @@ class WeekScheduleResponse(BaseModel):
     recommendations: List[AIRecommendation]
     total_hours: float
     cognitive_tax_score: float
+    embeddings_generated: Optional[int] = None
+
+
+# Goal Validation Models
+class GoalSubmission(BaseModel):
+    goal: str
+    # Note: timeframe, hours, and energy preferences are inferred from weekly feedback analysis
+
+
+class GoalValidationResponse(BaseModel):
+    is_valid: bool
+    validation_details: Dict[str, bool]
+    feedback: str
+    suggestions: List[str]
+    refined_versions: List[Dict[str, str]]  # List of refined goal options
+
+
+class SuggestedTask(BaseModel):
+    title: str
+    category: TaskCategory
+    time_hours: float
+    goal: str
+    artifact: TaskArtifact
+    priority: int = Field(..., ge=1, le=10)
+    energy_level: str  # "high", "medium", "low"
+    batch_group: str
+    dependencies: List[str] = []
+
+
+class TaskSuggestionResponse(BaseModel):
+    goal_id: int  # ID of the saved goal
+    suggested_tasks: List[SuggestedTask]
+    scheduling_strategy: str
+    estimated_total_hours: Optional[float] = 0.0
+    energy_allocation: Optional[Dict[str, float]] = None
+    batching_recommendations: Optional[str] = None
+    weekly_breakdown: Optional[str] = None
+
+
+class CreateTasksFromSuggestionsRequest(BaseModel):
+    suggested_tasks: List[SuggestedTask]
+    goal_id: Optional[int] = None
+
+
+class OnboardingGoal(BaseModel):
+    id: int
+    user_id: int
+    goal: str
+    timeframe: str
+    is_validated: bool
+    validation_feedback: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    tasks_generated: bool = False
