@@ -1,0 +1,2391 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "PolyLearner API",
+        "description": "This is an API that uses the roles for polymath learning",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/info": {
+            "get": {
+                "summary": "Root",
+                "operationId": "root_info_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "summary": "Health Check",
+                "operationId": "health_check_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/tokens": {
+            "patch": {
+                "summary": "Update Token Usage",
+                "description": "Update user's token usage",
+                "operationId": "update_token_usage_users_tokens_patch",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "tokens_used",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Tokens Used"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboarding/validate-goal": {
+            "post": {
+                "summary": "Validate Onboarding Goal",
+                "description": "Validate a user's goal during onboarding using SMART criteria and productivity guidelines.\n\nThe goal must be:\n- Specific: Clearly defined, not vague\n- Measurable: Has quantifiable or clear qualitative success criteria\n- Achievable: Realistic given constraints\n- Relevant: Aligned with user's intentions\n- Time-bound: Has a deadline or timeframe\n\nReturns validation result with feedback and suggestions for improvement if rejected.",
+                "operationId": "validate_onboarding_goal_onboarding_validate_goal_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoalSubmission"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoalValidationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/onboarding/suggest-tasks": {
+            "post": {
+                "summary": "Suggest Tasks For Goal",
+                "description": "Generate task suggestions for a goal following productivity guidelines.\n\nThe LLM will:\n1. Apply 80/20 rule (identify high-impact tasks)\n2. Batch similar tasks to minimize context switching\n3. Categorize by type (research, coding, admin, networking)\n4. Assign appropriate energy levels\n5. Estimate realistic time blocks\n6. Prioritize using Eisenhower Matrix\n7. Consider dependencies and optimal sequencing\n\nWorks with any goal - validation is done separately to provide refinement suggestions.\n\nAlso saves the goal to the unified goals collection and returns the goal_id.",
+                "operationId": "suggest_tasks_for_goal_onboarding_suggest_tasks_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoalSubmission"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskSuggestionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/onboarding/create-tasks-from-suggestions": {
+            "post": {
+                "summary": "Create Tasks From Suggestions",
+                "description": "Create actual tasks in the database from LLM suggestions.\n\nThis allows users to:\n1. Accept all suggested tasks\n2. Accept selected tasks\n3. Modify tasks before creation\n\nAlso creates Google Calendar events if the user has a valid access token.\n\nReturns created task IDs and calendar event creation status.",
+                "operationId": "create_tasks_from_suggestions_onboarding_create_tasks_from_suggestions_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTasksFromSuggestionsRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/onboarding/goals": {
+            "get": {
+                "summary": "List Onboarding Goals",
+                "description": "List all goals for the current user (for backwards compatibility with frontend)",
+                "operationId": "list_onboarding_goals_onboarding_goals_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/Goal"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Onboarding Goals Onboarding Goals Get"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/goals": {
+            "get": {
+                "summary": "List Goals",
+                "description": "List all goals for the current user",
+                "operationId": "list_goals_goals_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/Goal"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Goals Goals Get"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "post": {
+                "summary": "Create Goal",
+                "description": "Create a unified goal",
+                "operationId": "create_goal_goals_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoalCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Goal"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/goals/{goal_id}": {
+            "get": {
+                "summary": "Get Goal",
+                "description": "Get a specific goal by ID",
+                "operationId": "get_goal_goals__goal_id__get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "goal_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Goal Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Goal"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Goal",
+                "description": "Delete a goal and all its associated tasks.\nAlso removes calendar events for all tasks.",
+                "operationId": "delete_goal_goals__goal_id__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "goal_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Goal Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/calendar/events": {
+            "get": {
+                "summary": "Get Calendar Events",
+                "description": "Fetch events from user's Google Calendar.\n\nArgs:\n    time_min: Optional ISO timestamp for earliest event (defaults to start of current week)\n    time_max: Optional ISO timestamp for latest event (defaults to end of current week)\n\nReturns:\n    List of calendar events with task information",
+                "operationId": "get_calendar_events_calendar_events_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "time_min",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Time Min"
+                        }
+                    },
+                    {
+                        "name": "time_max",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Time Max"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks": {
+            "post": {
+                "summary": "Create Task",
+                "description": "Create a new task with title, category, time in hours, goal, artifact, and optional review.\n\nArgs:\n    task: Task data\n    current_user: Authenticated user\n    auto_schedule: Whether to automatically schedule the task on Google Calendar (default: True)",
+                "operationId": "create_task_tasks_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "auto_schedule",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Auto Schedule"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TaskCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Task"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "List Tasks",
+                "description": "List all tasks for the current user.\nOptionally filter by goal_id to get tasks for a specific goal.",
+                "operationId": "list_tasks_tasks_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "goal_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Goal Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Task"
+                                    },
+                                    "title": "Response List Tasks Tasks Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/weekly-goals": {
+            "get": {
+                "summary": "List Weekly Goals",
+                "description": "List all weekly goals (filtered from unified goals collection)",
+                "operationId": "list_weekly_goals_weekly_goals_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/Goal"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Weekly Goals Weekly Goals Get"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "post": {
+                "summary": "Create Weekly Goal",
+                "description": "Create a weekly goal - saved to unified goals collection.",
+                "operationId": "create_weekly_goal_weekly_goals_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoalCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Goal"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/weekly-goals/review": {
+            "post": {
+                "summary": "Add Weekly Review",
+                "description": "Attach a review to an existing goal.",
+                "operationId": "add_weekly_review_weekly_goals_review_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoalReviewCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoalReviewResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/reviews": {
+            "post": {
+                "summary": "Add Review",
+                "description": "Add a review linked to an existing task by task_id.",
+                "operationId": "add_review_tasks_reviews_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReviewCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskReviewResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/recommendations": {
+            "get": {
+                "summary": "Get Recommendations",
+                "description": "Get AI-powered task recommendations",
+                "operationId": "get_recommendations_recommendations_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/AIRecommendation"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Get Recommendations Recommendations Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule": {
+            "get": {
+                "summary": "Get Optimized Schedule",
+                "description": "Get optimized weekly schedule with AI recommendations",
+                "operationId": "get_optimized_schedule_schedule_get",
+                "parameters": [
+                    {
+                        "name": "week_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Week Start"
+                        }
+                    },
+                    {
+                        "name": "daily_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 9,
+                            "title": "Daily Start"
+                        }
+                    },
+                    {
+                        "name": "daily_end",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 17,
+                            "title": "Daily End"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WeekScheduleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/ics": {
+            "get": {
+                "summary": "Export Schedule Ics",
+                "description": "Export schedule as ICS file",
+                "operationId": "export_schedule_ics_schedule_ics_get",
+                "parameters": [
+                    {
+                        "name": "week_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Week Start"
+                        }
+                    },
+                    {
+                        "name": "daily_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 9,
+                            "title": "Daily Start"
+                        }
+                    },
+                    {
+                        "name": "daily_end",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 17,
+                            "title": "Daily End"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/groups": {
+            "get": {
+                "summary": "Get Task Groups",
+                "description": "Group tasks by similarity using LLM analysis",
+                "operationId": "get_task_groups_analytics_groups_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/schedule/intelligent": {
+            "get": {
+                "summary": "Get Intelligent Schedule",
+                "description": "Get AI-optimized schedule that groups similar tasks and minimizes cognitive load",
+                "operationId": "get_intelligent_schedule_analytics_schedule_intelligent_get",
+                "parameters": [
+                    {
+                        "name": "week_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Week Start"
+                        }
+                    },
+                    {
+                        "name": "daily_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 9,
+                            "title": "Daily Start"
+                        }
+                    },
+                    {
+                        "name": "daily_end",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 17,
+                            "title": "Daily End"
+                        }
+                    },
+                    {
+                        "name": "peak_hours",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "9-12",
+                            "title": "Peak Hours"
+                        }
+                    },
+                    {
+                        "name": "include_embeddings",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Include Embeddings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/patterns": {
+            "get": {
+                "summary": "Analyze Task Patterns",
+                "description": "Analyze patterns and trends in tasks with AI insights",
+                "operationId": "analyze_task_patterns_analytics_patterns_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/cognitive-tax": {
+            "get": {
+                "summary": "Get Cognitive Tax Analysis",
+                "description": "Analyze cognitive tax of current schedule",
+                "operationId": "get_cognitive_tax_analysis_analytics_cognitive_tax_get",
+                "parameters": [
+                    {
+                        "name": "week_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Week Start"
+                        }
+                    },
+                    {
+                        "name": "daily_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 9,
+                            "title": "Daily Start"
+                        }
+                    },
+                    {
+                        "name": "daily_end",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 17,
+                            "title": "Daily End"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/query": {
+            "post": {
+                "summary": "Natural Language Query",
+                "description": "Ask questions about your tasks in natural language.\n\nExamples:\n- \"How many coding tasks do I have?\"\n- \"What's the average time for research tasks?\"\n- \"Show me high priority tasks\"\n- \"Which category has the most hours allocated?\"\n- \"How many tasks have been reviewed?\"",
+                "operationId": "natural_language_query_analytics_query_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MessageRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/insights/database": {
+            "get": {
+                "summary": "Get Database Insights",
+                "description": "Get comprehensive insights from the MongoDB database.\nProvides real-time statistics and patterns from your actual task data.",
+                "operationId": "get_database_insights_analytics_insights_database_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/embeddings": {
+            "get": {
+                "summary": "Get Task Embeddings",
+                "description": "Generate vector embeddings for all tasks.\nReturns semantic vector representations of each task.",
+                "operationId": "get_task_embeddings_analytics_embeddings_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/schedule/intelligent/create-events": {
+            "post": {
+                "summary": "Create Calendar Events From Intelligent Schedule",
+                "description": "Generate intelligent schedule with vector embeddings and create actual Google Calendar events.\n\nThis endpoint:\n1. Generates vector embeddings for all tasks\n2. Creates an AI-optimized schedule\n3. Creates the scheduled tasks as events in Google Calendar\n\nRequires Google Calendar access (user must be authenticated)",
+                "operationId": "create_calendar_events_from_intelligent_schedule_analytics_schedule_intelligent_create_events_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "week_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Week Start"
+                        }
+                    },
+                    {
+                        "name": "daily_start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 9,
+                            "title": "Daily Start"
+                        }
+                    },
+                    {
+                        "name": "daily_end",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 17,
+                            "title": "Daily End"
+                        }
+                    },
+                    {
+                        "name": "peak_hours",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "9-12",
+                            "title": "Peak Hours"
+                        }
+                    },
+                    {
+                        "name": "calendar_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "primary",
+                            "title": "Calendar Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/coach/sessions": {
+            "get": {
+                "summary": "Get Coaching Sessions",
+                "description": "Get all coaching sessions for the current user.",
+                "operationId": "get_coaching_sessions_coach_sessions_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Coaching Session",
+                "description": "Create a new coaching session.",
+                "operationId": "create_coaching_session_coach_sessions_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "title",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Title"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/coach/chat": {
+            "post": {
+                "summary": "Chat With Coach",
+                "description": "Send a message to the AI coach and get a response.\nThe coach has access to user's tasks and can provide insights.",
+                "operationId": "chat_with_coach_coach_chat_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CoachRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CoachResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AIRecommendation": {
+                "properties": {
+                    "suggestion": {
+                        "type": "string",
+                        "title": "Suggestion"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "title": "Reason"
+                    },
+                    "priority": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 1.0,
+                        "title": "Priority"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "suggestion",
+                    "reason",
+                    "priority"
+                ],
+                "title": "AIRecommendation"
+            },
+            "AuthResponse": {
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "title": "Access Token"
+                    },
+                    "token_type": {
+                        "type": "string",
+                        "title": "Token Type",
+                        "default": "bearer"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "access_token",
+                    "user"
+                ],
+                "title": "AuthResponse"
+            },
+            "CoachRequest": {
+                "properties": {
+                    "session_id": {
+                        "type": "string",
+                        "title": "Session Id"
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "session_id",
+                    "message"
+                ],
+                "title": "CoachRequest"
+            },
+            "CoachResponse": {
+                "properties": {
+                    "response": {
+                        "type": "string",
+                        "title": "Response"
+                    },
+                    "task_insights": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Task Insights"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "response"
+                ],
+                "title": "CoachResponse"
+            },
+            "CreateTasksFromSuggestionsRequest": {
+                "properties": {
+                    "suggested_tasks": {
+                        "items": {
+                            "$ref": "#/components/schemas/SuggestedTask"
+                        },
+                        "type": "array",
+                        "title": "Suggested Tasks"
+                    },
+                    "goal_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Goal Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "suggested_tasks"
+                ],
+                "title": "CreateTasksFromSuggestionsRequest"
+            },
+            "DoneOnTime": {
+                "type": "string",
+                "enum": [
+                    "yes",
+                    "no"
+                ],
+                "title": "DoneOnTime"
+            },
+            "Goal": {
+                "properties": {
+                    "goal": {
+                        "type": "string",
+                        "title": "Goal"
+                    },
+                    "timeframe": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timeframe"
+                    },
+                    "category": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Category"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "title": "User Id"
+                    },
+                    "is_validated": {
+                        "type": "boolean",
+                        "title": "Is Validated",
+                        "default": false
+                    },
+                    "validation_feedback": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Validation Feedback"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "tasks_generated": {
+                        "type": "boolean",
+                        "title": "Tasks Generated",
+                        "default": false
+                    },
+                    "task_ids": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "title": "Task Ids",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "goal",
+                    "id",
+                    "user_id",
+                    "created_at"
+                ],
+                "title": "Goal"
+            },
+            "GoalCreate": {
+                "properties": {
+                    "goal": {
+                        "type": "string",
+                        "title": "Goal"
+                    },
+                    "timeframe": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timeframe"
+                    },
+                    "category": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Category"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "goal"
+                ],
+                "title": "GoalCreate"
+            },
+            "GoalReviewCreate": {
+                "properties": {
+                    "notes": {
+                        "type": "string",
+                        "title": "Notes"
+                    },
+                    "focus_rate": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 1.0,
+                        "title": "Focus Rate"
+                    },
+                    "artifact": {
+                        "type": "string",
+                        "title": "Artifact"
+                    },
+                    "done_on_time": {
+                        "$ref": "#/components/schemas/DoneOnTime"
+                    },
+                    "goal_id": {
+                        "type": "integer",
+                        "title": "Goal Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "notes",
+                    "focus_rate",
+                    "artifact",
+                    "done_on_time",
+                    "goal_id"
+                ],
+                "title": "GoalReviewCreate"
+            },
+            "GoalReviewResponse": {
+                "properties": {
+                    "notes": {
+                        "type": "string",
+                        "title": "Notes"
+                    },
+                    "focus_rate": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 1.0,
+                        "title": "Focus Rate"
+                    },
+                    "artifact": {
+                        "type": "string",
+                        "title": "Artifact"
+                    },
+                    "done_on_time": {
+                        "$ref": "#/components/schemas/DoneOnTime"
+                    },
+                    "goal_id": {
+                        "type": "integer",
+                        "title": "Goal Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "notes",
+                    "focus_rate",
+                    "artifact",
+                    "done_on_time",
+                    "goal_id"
+                ],
+                "title": "GoalReviewResponse"
+            },
+            "GoalSubmission": {
+                "properties": {
+                    "goal": {
+                        "type": "string",
+                        "title": "Goal"
+                    },
+                    "goal_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Goal Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "goal"
+                ],
+                "title": "GoalSubmission"
+            },
+            "GoalValidationResponse": {
+                "properties": {
+                    "goal_id": {
+                        "type": "integer",
+                        "title": "Goal Id"
+                    },
+                    "is_valid": {
+                        "type": "boolean",
+                        "title": "Is Valid"
+                    },
+                    "validation_details": {
+                        "additionalProperties": {
+                            "type": "boolean"
+                        },
+                        "type": "object",
+                        "title": "Validation Details"
+                    },
+                    "feedback": {
+                        "type": "string",
+                        "title": "Feedback"
+                    },
+                    "suggestions": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Suggestions"
+                    },
+                    "refined_versions": {
+                        "items": {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Refined Versions"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "goal_id",
+                    "is_valid",
+                    "validation_details",
+                    "feedback",
+                    "suggestions",
+                    "refined_versions"
+                ],
+                "title": "GoalValidationResponse"
+            },
+            "GoogleAuthRequest": {
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "title": "Access Token"
+                    },
+                    "expires_in": {
+                        "type": "integer",
+                        "title": "Expires In"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "access_token",
+                    "expires_in"
+                ],
+                "title": "GoogleAuthRequest"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "MessageRequest": {
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "title": "Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "message"
+                ],
+                "title": "MessageRequest"
+            },
+            "Review": {
+                "properties": {
+                    "notes": {
+                        "type": "string",
+                        "title": "Notes"
+                    },
+                    "focus_rate": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 1.0,
+                        "title": "Focus Rate"
+                    },
+                    "artifact": {
+                        "type": "string",
+                        "title": "Artifact"
+                    },
+                    "done_on_time": {
+                        "$ref": "#/components/schemas/DoneOnTime"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "notes",
+                    "focus_rate",
+                    "artifact",
+                    "done_on_time"
+                ],
+                "title": "Review"
+            },
+            "ReviewCreate": {
+                "properties": {
+                    "notes": {
+                        "type": "string",
+                        "title": "Notes"
+                    },
+                    "focus_rate": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 1.0,
+                        "title": "Focus Rate"
+                    },
+                    "artifact": {
+                        "type": "string",
+                        "title": "Artifact"
+                    },
+                    "done_on_time": {
+                        "$ref": "#/components/schemas/DoneOnTime"
+                    },
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "notes",
+                    "focus_rate",
+                    "artifact",
+                    "done_on_time",
+                    "task_id"
+                ],
+                "title": "ReviewCreate"
+            },
+            "ScheduleBlock": {
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "task_title": {
+                        "type": "string",
+                        "title": "Task Title"
+                    },
+                    "category": {
+                        "type": "string",
+                        "title": "Category"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "title": "Start Time"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "title": "End Time"
+                    },
+                    "duration_hours": {
+                        "type": "number",
+                        "title": "Duration Hours"
+                    },
+                    "scheduling_reason": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Scheduling Reason"
+                    },
+                    "embedding_sample": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "number"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Embedding Sample"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "task_id",
+                    "task_title",
+                    "category",
+                    "start_time",
+                    "end_time",
+                    "duration_hours"
+                ],
+                "title": "ScheduleBlock"
+            },
+            "SuggestedTask": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/TaskCategory"
+                    },
+                    "time_hours": {
+                        "type": "number",
+                        "title": "Time Hours"
+                    },
+                    "goal": {
+                        "type": "string",
+                        "title": "Goal"
+                    },
+                    "artifact": {
+                        "$ref": "#/components/schemas/TaskArtifact"
+                    },
+                    "priority": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 1.0,
+                        "title": "Priority"
+                    },
+                    "energy_level": {
+                        "type": "string",
+                        "title": "Energy Level"
+                    },
+                    "batch_group": {
+                        "type": "string",
+                        "title": "Batch Group"
+                    },
+                    "dependencies": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Dependencies",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "category",
+                    "time_hours",
+                    "goal",
+                    "artifact",
+                    "priority",
+                    "energy_level",
+                    "batch_group"
+                ],
+                "title": "SuggestedTask"
+            },
+            "Task": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/TaskCategory"
+                    },
+                    "time_hours": {
+                        "type": "number",
+                        "title": "Time Hours"
+                    },
+                    "goal_id": {
+                        "type": "integer",
+                        "title": "Goal Id"
+                    },
+                    "artifact": {
+                        "$ref": "#/components/schemas/TaskArtifact"
+                    },
+                    "review": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Review"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "priority": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 10.0,
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Priority",
+                        "default": 5
+                    },
+                    "due_date": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Due Date"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "goal": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Goal"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "category",
+                    "time_hours",
+                    "goal_id",
+                    "artifact",
+                    "id"
+                ],
+                "title": "Task"
+            },
+            "TaskArtifact": {
+                "type": "string",
+                "enum": [
+                    "article",
+                    "notes",
+                    "code"
+                ],
+                "title": "TaskArtifact"
+            },
+            "TaskCategory": {
+                "type": "string",
+                "enum": [
+                    "research",
+                    "coding",
+                    "admin",
+                    "networking"
+                ],
+                "title": "TaskCategory"
+            },
+            "TaskCreate": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/TaskCategory"
+                    },
+                    "time_hours": {
+                        "type": "number",
+                        "title": "Time Hours"
+                    },
+                    "goal_id": {
+                        "type": "integer",
+                        "title": "Goal Id"
+                    },
+                    "artifact": {
+                        "$ref": "#/components/schemas/TaskArtifact"
+                    },
+                    "review": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Review"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "priority": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 10.0,
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Priority",
+                        "default": 5
+                    },
+                    "due_date": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Due Date"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "category",
+                    "time_hours",
+                    "goal_id",
+                    "artifact"
+                ],
+                "title": "TaskCreate"
+            },
+            "TaskReviewResponse": {
+                "properties": {
+                    "notes": {
+                        "type": "string",
+                        "title": "Notes"
+                    },
+                    "focus_rate": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 1.0,
+                        "title": "Focus Rate"
+                    },
+                    "artifact": {
+                        "type": "string",
+                        "title": "Artifact"
+                    },
+                    "done_on_time": {
+                        "$ref": "#/components/schemas/DoneOnTime"
+                    },
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "notes",
+                    "focus_rate",
+                    "artifact",
+                    "done_on_time",
+                    "task_id"
+                ],
+                "title": "TaskReviewResponse"
+            },
+            "TaskSuggestionResponse": {
+                "properties": {
+                    "goal_id": {
+                        "type": "integer",
+                        "title": "Goal Id"
+                    },
+                    "suggested_tasks": {
+                        "items": {
+                            "$ref": "#/components/schemas/SuggestedTask"
+                        },
+                        "type": "array",
+                        "title": "Suggested Tasks"
+                    },
+                    "scheduling_strategy": {
+                        "type": "string",
+                        "title": "Scheduling Strategy"
+                    },
+                    "estimated_total_hours": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Estimated Total Hours",
+                        "default": 0.0
+                    },
+                    "energy_allocation": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "type": "number"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Energy Allocation"
+                    },
+                    "batching_recommendations": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Batching Recommendations"
+                    },
+                    "weekly_breakdown": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Weekly Breakdown"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "goal_id",
+                    "suggested_tasks",
+                    "scheduling_strategy"
+                ],
+                "title": "TaskSuggestionResponse"
+            },
+            "User": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "google_id": {
+                        "type": "string",
+                        "title": "Google Id"
+                    },
+                    "picture": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Picture"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "tokens_used": {
+                        "type": "integer",
+                        "title": "Tokens Used",
+                        "default": 0
+                    },
+                    "tokens_limit": {
+                        "type": "integer",
+                        "title": "Tokens Limit",
+                        "default": 100000
+                    },
+                    "google_access_token": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Google Access Token"
+                    },
+                    "google_token_expiry": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Google Token Expiry"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "name",
+                    "google_id",
+                    "id"
+                ],
+                "title": "User"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            },
+            "WeekScheduleResponse": {
+                "properties": {
+                    "week_start": {
+                        "type": "string",
+                        "title": "Week Start"
+                    },
+                    "schedule": {
+                        "items": {
+                            "$ref": "#/components/schemas/ScheduleBlock"
+                        },
+                        "type": "array",
+                        "title": "Schedule"
+                    },
+                    "recommendations": {
+                        "items": {
+                            "$ref": "#/components/schemas/AIRecommendation"
+                        },
+                        "type": "array",
+                        "title": "Recommendations"
+                    },
+                    "total_hours": {
+                        "type": "number",
+                        "title": "Total Hours"
+                    },
+                    "cognitive_tax_score": {
+                        "type": "number",
+                        "title": "Cognitive Tax Score"
+                    },
+                    "embeddings_generated": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Embeddings Generated"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "week_start",
+                    "schedule",
+                    "recommendations",
+                    "total_hours",
+                    "cognitive_tax_score"
+                ],
+                "title": "WeekScheduleResponse"
+            }
+        },
+        "securitySchemes": {
+            "HTTPBearer": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    }
+}

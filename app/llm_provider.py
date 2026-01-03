@@ -197,8 +197,13 @@ class OllamaProvider(LLMProvider):
                 "stream": False,
                 "options": {
                     "temperature": temperature,
-                    "num_predict": max_tokens
-                }
+                    "num_predict": max_tokens,
+                    "top_k": 40,
+                    "top_p": 0.9,
+                    "num_ctx": 4096,
+                    "num_thread": 8
+                },
+                "keep_alive": "10m"
             }
             
             if json_mode:

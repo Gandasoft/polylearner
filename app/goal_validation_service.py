@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class GoalValidationService:
     """
     Service for validating goals and suggesting tasks based on productivity guidelines.
-    
+
     Core Principles (from LLM Guidelines):
     1. Proactive mindset - Goals should reflect ownership and intentionality
     2. Clear intentions - Goals must be specific and measurable
@@ -29,7 +29,7 @@ class GoalValidationService:
     4. Alignment - Goals should align with long-term vision
     5. Energy management - Consider natural rhythms and capacity
     """
-    
+
     PRODUCTIVITY_GUIDELINES = """
 Core Productivity Principles:
 
@@ -74,16 +74,20 @@ Core Productivity Principles:
    - Leave buffer time for unforeseen events
    - Balance work, rest, and personal activities
 """
-    
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, db: Optional[AsyncIOMotorDatabase] = None):
+
+    def __init__(
+        self,
+        llm_provider: Optional[LLMProvider] = None,
+        db: Optional[AsyncIOMotorDatabase] = None,
+    ):
         self.llm_provider = llm_provider
         self.db = db
-    
+
     async def validate_goal(self, goal: str) -> Dict[str, Any]:
         """
         Analyze and refine a goal using SMART criteria and productivity guidelines.
         Always provides refinement suggestions - never outright rejects.
-        
+
         Returns:
             {
                 "is_valid": bool,
@@ -102,113 +106,173 @@ Core Productivity Principles:
         if not self.llm_provider or not self.llm_provider.is_available():
             logger.warning("LLM provider not available for goal validation")
             return self._basic_goal_validation(goal)
-        
-        try:
-            prompt = f"""You are an expert productivity coach specialized in SMART goal refinement.
 
-PRODUCTIVITY GUIDELINES:
-{self.PRODUCTIVITY_GUIDELINES}
+        # Get current date for context
+        current_date = datetime.now()
+        current_date_str = current_date.strftime("%B %d, %Y")
+
+        try:
+            prompt = f"""You are an expert productivity coach. Analyze this goal using SMART criteria.
+
+CURRENT DATE: {current_date_str}
+⚠️ All dates must be AFTER {current_date_str}
 
 USER'S GOAL: "{goal}"
 
-TASK:
-Analyze this goal and provide refined versions that better meet SMART criteria.
-ALWAYS provide helpful refinements - never just reject the goal.
+SMART EVALUATION:
+- Specific: Clear, concrete outcome?
+- Measurable: Quantifiable metrics or checkpoints?
+- Achievable: Realistic for timeframe?
+- Relevant: Aligned with growth/development?
+- Time-bound: Has deadline after {current_date_str}?
 
-Evaluation criteria:
-- Specific: Clearly defined outcome
-- Measurable: Quantifiable or clear qualitative indicators
-- Achievable: Realistic given constraints
-- Relevant: Aligned with learning/productivity
-- Time-bound: Has deadline or timeframe
+REFINEMENT STRATEGY:
+Provide 3 progressively refined versions of the user's goal:
+- Version 1: Keep user's wording, add missing SMART elements
+- Version 2: Restructure for clarity and measurability
+- Version 3: Professional format with milestones and metrics
 
-Return ONLY valid JSON in this format:
+EXAMPLE (if goal was "learn Spanish"):
 {{
-  "is_valid": true/false,
-  "validation_details": {{
-    "specific": true/false,
-    "measurable": true/false,
-    "achievable": true/false,
-    "relevant": true/false,
-    "time_bound": true/false
-  }},
-  "feedback": "Constructive analysis of the goal - what's good and what could be improved",
-  "suggestions": [
-    "Specific tip on how to make it more measurable",
-    "How to add concrete milestones",
-    "How to make the timeframe clearer"
-  ],
   "refined_versions": [
     {{
-      "goal": "First refined version of the goal",
-      "improvement": "What makes this version better",
-      "why_better": "Specific improvements made"
+      "goal": "Learn Spanish conversational skills to B1 level within 8 weeks",
+      "improvement": "Added specific level (B1) and timeframe (8 weeks)",
+      "why_better": "Makes success measurable and time-bound"
     }},
     {{
-      "goal": "Second refined version (more ambitious)",
-      "improvement": "What makes this version better",
-      "why_better": "Specific improvements made"
+      "goal": "Achieve B1 Spanish fluency by completing 50 conversation sessions and scoring 80%+ on B1 practice test within 8 weeks",
+      "improvement": "Added concrete metrics (50 sessions, 80% score)",
+      "why_better": "Clear milestones to track progress"
     }},
     {{
-      "goal": "Third refined version (most structured)",
-      "improvement": "What makes this version better",
-      "why_better": "Specific improvements made"
+      "goal": "Reach CEFR B1 Spanish proficiency by March 1, 2026 through: 50 conversation sessions (30min each), daily grammar practice (20min), and achieving 80%+ on official B1 practice exam",
+      "improvement": "Specific date, detailed action plan, clear success criteria",
+      "why_better": "Comprehensive plan with measurable checkpoints"
     }}
   ]
 }}
 
-Important: Always provide 3 refined versions even if the goal is already good. Show progressively better/more detailed versions."""
+YOUR TASK - Return ONLY valid JSON with ACTUAL refined goal statements (not placeholders):
+{{
+  "is_valid": true,
+  "validation_details": {{
+    "specific": true,
+    "measurable": true,
+    "achievable": true,
+    "relevant": true,
+    "time_bound": true
+  }},
+  "feedback": "Professional analysis of what's strong and what needs improvement",
+  "suggestions": [
+    "Specific actionable suggestion 1",
+    "Specific actionable suggestion 2",
+    "Specific actionable suggestion 3"
+  ],
+  "refined_versions": [
+    {{
+      "goal": "ACTUAL REFINED GOAL STATEMENT #1 - not a description",
+      "improvement": "What was added/changed",
+      "why_better": "Why this improves the goal"
+    }},
+    {{
+      "goal": "ACTUAL REFINED GOAL STATEMENT #2 - more detailed than #1",
+      "improvement": "What was enhanced",
+      "why_better": "Benefits of these enhancements"
+    }},
+    {{
+      "goal": "ACTUAL REFINED GOAL STATEMENT #3 - professional standard",
+      "improvement": "Professional improvements made",
+      "why_better": "Why this is the best version"
+    }}
+  ]
+}}
+
+QUALITY CHECKLIST:
+☑ All timeframes are AFTER {current_date_str} (no past dates)
+☑ Feedback is professional and constructive
+☑ Each refined version is progressively better
+☑ Suggestions are specific and actionable
+☑ All SMART criteria are honestly evaluated"""
 
             content = await self.llm_provider.generate(
                 prompt=prompt,
-                system_prompt="You are a helpful productivity coach. Refine and improve goals constructively. Always return valid JSON.",
-                temperature=0.5,
-                max_tokens=1500,
-                json_mode=True
+                system_prompt=f"You are a professional productivity coach. Today is {current_date_str}. Never suggest past dates. IMPORTANT: In 'refined_versions', the 'goal' field must contain the ACTUAL refined goal statement, NOT a description or placeholder. Be precise, constructive, and professional. Always return valid JSON.",
+                temperature=0.3,
+                max_tokens=1000,
+                json_mode=True,
             )
-            
+
             # Extract JSON
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+            json_match = re.search(
+                r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL
+            )
             if json_match:
                 content = json_match.group(1)
-            
+
             result = json.loads(content)
-            
-            # Ensure refined_versions exists
-            if 'refined_versions' not in result or not result['refined_versions']:
-                result['refined_versions'] = [
-                    {
-                        "goal": goal,
-                        "improvement": "Original goal",
-                        "why_better": "Use this version if you prefer your original phrasing"
-                    }
-                ]
-            
-            logger.info(f"Goal analysis: '{goal}' -> {'VALID' if result['is_valid'] else 'NEEDS_REFINEMENT'} with {len(result['refined_versions'])} suggestions")
-            
+
+            # Ensure refined_versions has at least 3 versions
+            if "refined_versions" not in result or not result["refined_versions"]:
+                result["refined_versions"] = []
+
+            # Fill in missing versions to ensure we always have 3
+            while len(result["refined_versions"]) < 3:
+                version_num = len(result["refined_versions"]) + 1
+                if version_num == 1:
+                    result["refined_versions"].append(
+                        {
+                            "goal": goal,
+                            "improvement": "Your original goal",
+                            "why_better": "Start with your original phrasing and refine as you progress",
+                        }
+                    )
+                elif version_num == 2:
+                    result["refined_versions"].append(
+                        {
+                            "goal": f"{goal} with clear milestones and measurable outcomes",
+                            "improvement": "Added structure and measurability",
+                            "why_better": "Makes progress tracking easier and success criteria clearer",
+                        }
+                    )
+                else:
+                    result["refined_versions"].append(
+                        {
+                            "goal": f"{goal} - completed within 8 weeks with weekly checkpoints",
+                            "improvement": "Added timeframe and accountability",
+                            "why_better": "Creates urgency and allows for regular progress reviews",
+                        }
+                    )
+
+            logger.info(
+                f"Goal analysis: '{goal}' -> {'VALID' if result['is_valid'] else 'NEEDS_REFINEMENT'} with {len(result['refined_versions'])} suggestions"
+            )
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Error validating goal with LLM: {e}")
             return self._basic_goal_validation(goal)
-    
+
     def _basic_goal_validation(self, goal: str) -> Dict[str, Any]:
         """Fallback validation without LLM"""
         # Basic checks
         is_specific = len(goal.split()) > 3
-        has_measurable_indicators = bool(re.search(r'\d+|deadline|by|until|complete', goal, re.IGNORECASE))
-        
+        has_measurable_indicators = bool(
+            re.search(r"\d+|deadline|by|until|complete", goal, re.IGNORECASE)
+        )
+
         # Create basic refined versions
         refined_versions = [
             {
                 "goal": goal,
                 "improvement": "Original goal",
-                "why_better": "Your original phrasing"
+                "why_better": "Your original phrasing",
             }
         ]
-        
+
         is_valid = is_specific and has_measurable_indicators
-        
+
         return {
             "is_valid": is_valid,
             "validation_details": {
@@ -216,31 +280,34 @@ Important: Always provide 3 refined versions even if the goal is already good. S
                 "measurable": has_measurable_indicators,
                 "achievable": True,
                 "relevant": True,
-                "time_bound": has_measurable_indicators
+                "time_bound": has_measurable_indicators,
             },
             "feedback": "Goal validated using basic criteria. LLM validation recommended for better accuracy.",
             "suggestions": [
-                "Make the goal more specific with concrete outcomes" if not is_specific else "Good level of specificity",
-                "Add measurable criteria (numbers, deadlines, concrete deliverables)" if not has_measurable_indicators else "Has measurable elements",
-                "Consider including a timeframe (e.g., 'within 8 weeks', 'by March 1st')" if not has_measurable_indicators else "Well defined"
+                "Make the goal more specific with concrete outcomes"
+                if not is_specific
+                else "Good level of specificity",
+                "Add measurable criteria (numbers, deadlines, concrete deliverables)"
+                if not has_measurable_indicators
+                else "Has measurable elements",
+                "Consider including a timeframe (e.g., 'within 8 weeks', 'by March 1st')"
+                if not has_measurable_indicators
+                else "Well defined",
             ],
             "refined_versions": refined_versions,
-            "improved_goal": None
+            "improved_goal": None,
         }
-    
-    async def suggest_tasks_for_goal(
-        self,
-        goal: str
-    ) -> Dict[str, Any]:
+
+    async def suggest_tasks_for_goal(self, goal: str) -> Dict[str, Any]:
         """
-        Suggest tasks that would help achieve the goal, following productivity guidelines.
-        
+        Suggest tasks that help achieve the goal, following productivity guidelines.
+
         Args:
             goal: The validated goal
-        
+
         Note: Timeframe, available hours, and energy preferences are inferred from the goal
         and will be refined through weekly feedback analysis.
-        
+
         Returns:
             {
                 "suggested_tasks": List[Dict],
@@ -252,131 +319,229 @@ Important: Always provide 3 refined versions even if the goal is already good. S
         if not self.llm_provider or not self.llm_provider.is_available():
             logger.warning("LLM provider not available for task suggestions")
             return {"error": "LLM not available", "suggested_tasks": []}
-        
+
+        # Get current date for context
+        current_date = datetime.now()
+        current_date_str = current_date.strftime(
+            "%B %d, %Y"
+        )  # e.g., "January 15, 2026"
+
         try:
-            prompt = f"""You are an expert productivity coach. Create a breakdown of tasks to achieve this goal.
+            prompt = f"""Create a task breakdown for this goal. Return ONLY valid JSON.
 
-PRODUCTIVITY GUIDELINES:
-{self.PRODUCTIVITY_GUIDELINES}
+CURRENT DATE: {current_date_str}
+GOAL: "{goal}"
 
-USER'S GOAL: "{goal}"
+Generate 6-10 tasks following these rules:
+- Apply 80/20 rule (high-impact tasks first)
+- Logical sequence (prerequisites first)
+- Mix energy levels (high/medium/low)
+- Realistic: 1-4h per task, 15-20h total
 
-IMPORTANT NOTES:
-- Infer a reasonable timeframe from the goal (if not specified, assume 4-8 weeks)
-- Assume moderate availability (15-25 hours/week) unless goal suggests otherwise
-- Energy preferences will be learned from weekly feedback over time
+CONSTRAINTS:
+- category: "research" | "coding" | "admin" | "networking"
+- artifact: "notes" | "code" | "article"
+- energy_level: "high" | "medium" | "low"
+- priority: 1-10 (integer)
+- time_hours: 0.5-4.0 (float)
 
-TASK CREATION RULES:
-1. Apply 80/20 rule - identify the 20% of tasks that will drive 80% of results
-2. Batch similar tasks together (minimize cognitive switching cost)
-3. Categorize tasks: research, coding, admin, networking
-4. Assign energy levels: high (complex/creative), medium (moderate focus), low (routine)
-5. Estimate realistic time (consider ultradian rhythm: 90-120 min focus blocks)
-6. Prioritize based on Eisenhower Matrix (important vs urgent)
-7. Consider task dependencies and optimal sequencing
-8. Balance workload - don't overcommit (goal should stretch but not break)
-
-TASK ARTIFACTS (choose ONE per task):
-- research tasks → artifact: "notes"
-- coding tasks → artifact: "code"
-- admin tasks → artifact: "article" OR "notes"
-- networking tasks → artifact: "notes"
-
-IMPORTANT: Each field must contain exactly ONE value from its allowed options:
-- category: Must be ONLY "research" OR "coding" OR "admin" OR "networking" (not multiple values)
-- artifact: Must be ONLY "article" OR "notes" OR "code" (not multiple values)
-- energy_level: Must be ONLY "high" OR "medium" OR "low" (not multiple values)
-
-Return ONLY valid JSON:
+JSON FORMAT (return exactly this structure):
 {{
   "suggested_tasks": [
     {{
-      "title": "Clear, actionable task title",
+      "title": "Action-oriented task title",
       "category": "research",
-      "time_hours": 1.5,
-      "goal": "Why this task matters for the main goal",
-      "artifact": "article",
-      "priority": 8,
-      "energy_level": "high",
-      "batch_group": "Group name for batching similar tasks",
-      "dependencies": ["task_title_it_depends_on"]
-    }},
-    {{
-      "title": "Another task",
-      "category": "coding",
       "time_hours": 2.0,
-      "goal": "Task purpose",
-      "artifact": "code",
+      "goal": "Brief purpose",
+      "artifact": "notes",
       "priority": 9,
-      "energy_level": "medium",
-      "batch_group": "Development",
+      "energy_level": "high",
+      "batch_group": "Group name",
       "dependencies": []
     }}
   ],
-  "scheduling_strategy": "Brief explanation of optimal scheduling approach",
-  "estimated_total_hours": 12.5,
+  "scheduling_strategy": "Brief scheduling advice",
+  "estimated_total_hours": 18.0,
   "energy_allocation": {{
-    "high_energy_hours": 6.0,
-    "medium_energy_hours": 4.0,
-    "low_energy_hours": 2.5
+    "high_energy_hours": 8.0,
+    "medium_energy_hours": 7.0,
+    "low_energy_hours": 3.0
   }},
-  "batching_recommendations": "How to batch these tasks for minimal context switching",
-  "weekly_breakdown": "Monday: 2-3 hours (Tasks A,B), Tuesday: 3 hours (Task C)..."
-}}
-
-Important:
-- Total hours MUST be realistic (don't exceed available_hours_per_week)
-- Include mix of high/medium/low energy tasks
-- Group similar tasks for batching
-- Consider dependencies"""
+  "batching_recommendations": "Brief batching advice",
+  "weekly_breakdown": "Week-by-week summary"
+}}"""
 
             content = await self.llm_provider.generate(
                 prompt=prompt,
-                system_prompt="You are an expert task planner following productivity science. Always return valid JSON.",
-                temperature=0.5,
-                max_tokens=1500,
-                json_mode=True
+                system_prompt=f"You are an expert task planner with deep domain knowledge across subjects. Today is {current_date_str}. NEVER suggest past dates. Be precise with timeframes and subject-specific methodology. Always return valid JSON.",
+                temperature=0.3,
+                max_tokens=2500,  # Increased to handle larger task lists
+                json_mode=True,
             )
-            
+
             # Extract JSON
             logger.info(f"LLM response length: {len(content)} chars")
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+            json_match = re.search(
+                r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL
+            )
             if json_match:
                 content = json_match.group(1)
-            
+
             # Try to find JSON object in content if not already clean
-            if not content.strip().startswith('{'):
-                obj_match = re.search(r'\{.*\}', content, re.DOTALL)
+            if not content.strip().startswith("{"):
+                obj_match = re.search(r"\{.*\}", content, re.DOTALL)
                 if obj_match:
                     content = obj_match.group(0)
-            
-            result = json.loads(content)
-            logger.info(f"Generated {len(result.get('suggested_tasks', []))} tasks for goal: '{goal}'")
-            
+
+            # Try to parse JSON
+            try:
+                result = json.loads(content)
+            except json.JSONDecodeError as json_err:
+                # If JSON is truncated, try to repair by extracting complete tasks
+                logger.warning(f"JSON parse failed: {json_err}. Attempting repair...")
+                logger.info(f"Full content length: {len(content)} chars")
+
+                # Try to extract the array of tasks even if the overall JSON is broken
+                tasks = []
+
+                # Find the suggested_tasks array
+                tasks_match = re.search(
+                    r'"suggested_tasks":\s*\[(.*)', content, re.DOTALL
+                )
+                if tasks_match:
+                    tasks_content = tasks_match.group(1)
+
+                    # Split by task boundaries and try to parse each
+                    # Look for complete task objects (matching braces)
+                    task_candidates = []
+                    brace_depth = 0
+                    current_task = ""
+                    in_string = False
+                    escape_next = False
+
+                    for i, char in enumerate(tasks_content):
+                        if escape_next:
+                            escape_next = False
+                            current_task += char
+                            continue
+
+                        if char == "\\":
+                            escape_next = True
+                            current_task += char
+                            continue
+
+                        if char == '"' and not escape_next:
+                            in_string = not in_string
+
+                        if not in_string:
+                            if char == "{":
+                                if brace_depth == 0:
+                                    current_task = "{"
+                                else:
+                                    current_task += char
+                                brace_depth += 1
+                            elif char == "}":
+                                brace_depth -= 1
+                                current_task += char
+
+                                # Complete task object found
+                                if brace_depth == 0 and current_task.strip():
+                                    task_candidates.append(current_task.strip())
+                                    current_task = ""
+                            elif brace_depth > 0:
+                                current_task += char
+                        else:
+                            current_task += char
+
+                    # Try to parse each candidate
+                    for candidate in task_candidates:
+                        try:
+                            task_obj = json.loads(candidate)
+                            # Validate it has required fields
+                            if all(
+                                k in task_obj
+                                for k in ["title", "category", "time_hours"]
+                            ):
+                                # Ensure all required fields exist with defaults
+                                task_obj.setdefault("goal", "Task goal")
+                                task_obj.setdefault("artifact", "notes")
+                                task_obj.setdefault("priority", 5)
+                                task_obj.setdefault("energy_level", "medium")
+                                task_obj.setdefault("batch_group", "General")
+                                task_obj.setdefault("dependencies", [])
+                                tasks.append(task_obj)
+                        except json.JSONDecodeError:
+                            continue
+
+                if tasks:
+                    logger.info(
+                        f"Recovered {len(tasks)} complete tasks from malformed JSON"
+                    )
+                    result = {
+                        "suggested_tasks": tasks,
+                        "scheduling_strategy": "Tasks generated successfully. Review and adjust as needed.",
+                        "estimated_total_hours": sum(
+                            t.get("time_hours", 1.0) for t in tasks
+                        ),
+                        "energy_allocation": {
+                            "high_energy_hours": sum(
+                                t.get("time_hours", 1.0)
+                                for t in tasks
+                                if t.get("energy_level") == "high"
+                            ),
+                            "medium_energy_hours": sum(
+                                t.get("time_hours", 1.0)
+                                for t in tasks
+                                if t.get("energy_level") == "medium"
+                            ),
+                            "low_energy_hours": sum(
+                                t.get("time_hours", 1.0)
+                                for t in tasks
+                                if t.get("energy_level") == "low"
+                            ),
+                        },
+                        "batching_recommendations": "Group similar tasks to minimize context switching",
+                        "weekly_breakdown": f"Total {len(tasks)} tasks over available weeks",
+                    }
+                else:
+                    # If we can't recover any tasks, log full content and re-raise
+                    logger.error(
+                        f"Could not recover any tasks. Full content: {content}"
+                    )
+                    raise json_err
+
+            logger.info(
+                f"Generated {len(result.get('suggested_tasks', []))} tasks for goal: '{goal}'"
+            )
+
             return result
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON from LLM response: {e}")
-            logger.error(f"Content (first 500 chars): {content[:500] if 'content' in locals() else 'N/A'}")
+            logger.error(
+                f"Content (first 500 chars): {content[:500] if 'content' in locals() else 'N/A'}"
+            )
             return {
                 "error": "Failed to generate tasks - JSON parsing error",
-                "suggested_tasks": []
+                "suggested_tasks": [],
             }
         except Exception as e:
             logger.error(f"Error generating task suggestions: {type(e).__name__}: {e}")
             return {
                 "error": f"Failed to generate tasks: {str(e)}",
-                "suggested_tasks": []
+                "suggested_tasks": [],
             }
-    
-    async def analyze_goal_alignment(self, goal: str, existing_goals: List[str]) -> Dict[str, Any]:
+
+    async def analyze_goal_alignment(
+        self, goal: str, existing_goals: List[str]
+    ) -> Dict[str, Any]:
         """
         Analyze if the new goal aligns with existing goals (avoiding conflicts).
         Checks for goal coherence and potential conflicts.
         """
         if not self.llm_provider or not self.llm_provider.is_available():
             return {"alignment_score": 0.5, "conflicts": [], "synergies": []}
-        
+
         try:
             prompt = f"""Analyze if this new goal aligns with existing goals.
 
@@ -401,29 +566,30 @@ Return ONLY valid JSON:
 }}"""
 
             content = await self.llm_provider.generate(
-                prompt=prompt,
-                temperature=0.3,
-                max_tokens=600,
-                json_mode=True
+                prompt=prompt, temperature=0.3, max_tokens=600, json_mode=True
             )
-            
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+
+            json_match = re.search(
+                r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL
+            )
             if json_match:
                 content = json_match.group(1)
-            
+
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Error analyzing goal alignment: {e}")
             return {"alignment_score": 0.5, "conflicts": [], "synergies": []}
-    
-    async def suggest_goal_improvements(self, rejected_goal: str, validation_result: Dict) -> Dict[str, Any]:
+
+    async def suggest_goal_improvements(
+        self, rejected_goal: str, validation_result: Dict
+    ) -> Dict[str, Any]:
         """
         Provide detailed suggestions for improving a rejected goal.
         """
         if not self.llm_provider or not self.llm_provider.is_available():
             return {"improved_versions": [], "tips": []}
-        
+
         try:
             prompt = f"""Help improve this rejected goal.
 
@@ -453,18 +619,17 @@ Return ONLY valid JSON:
 }}"""
 
             content = await self.llm_provider.generate(
-                prompt=prompt,
-                temperature=0.6,
-                max_tokens=1000,
-                json_mode=True
+                prompt=prompt, temperature=0.6, max_tokens=1000, json_mode=True
             )
-            
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+
+            json_match = re.search(
+                r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL
+            )
             if json_match:
                 content = json_match.group(1)
-            
+
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Error generating goal improvements: {e}")
             return {"improved_versions": [], "tips": []}

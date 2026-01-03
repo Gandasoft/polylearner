@@ -16,6 +16,8 @@ export default {
   		fontFamily: {
   			sans: [
   				'Inter',
+  				'Lato',
+  				'Open Sans',
   				'ui-sans-serif',
   				'system-ui',
   				'-apple-system',

@@ -1,6 +1,6 @@
 # PolyLearner API
 
-A comprehensive task and learning management system designed to help you organize your work with weekly goals, track task reviews, and measure progress through structured reviews. Built with FastAPI and MongoDB.
+A comprehensive task and learning management system designed to help you organize your work with weekly goals, track task reviews, and measure progress through structured reviews. Built with FastAPI and supports both **MongoDB** and **Google Firestore** as database backends.
 
 ## 🎯 Overview
 
@@ -45,9 +45,19 @@ PolyLearner is a RESTful API that enables you to:
 
 - **FastAPI** (v0.109.0): Modern Python web framework
 - **Motor** (v3.6.0): Async MongoDB driver
-- **MongoDB**: Document-based NoSQL database
+- **Database Options**: 
+  - **MongoDB** (default): Document-based NoSQL database
+  - **Google Firestore**: Fully-managed NoSQL document database
 - **Docker & Docker Compose**: Containerization and orchestration
 - **Python 3.11**: Runtime
+
+### Database Configuration
+
+PolyLearner supports two database backends. See [DATABASE_SETUP.md](DATABASE_SETUP.md) for detailed configuration instructions.
+
+**Quick Configuration:**
+- **MongoDB** (default): Set `DB_TYPE=mongodb` in `.env`
+- **Firestore**: Set `DB_TYPE=firestore` and configure GCP credentials
 
 ## 📋 Prerequisites
 

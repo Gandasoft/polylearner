@@ -20,9 +20,9 @@ export interface Task {
   title: string;
   category: 'research' | 'coding' | 'admin' | 'networking';
   time_hours: number;
-  goal: string;
+  goal_id: number;  // Required - tasks must belong to a goal
+  goal?: string;  // Denormalized for display
   artifact: 'article' | 'notes' | 'code';
-  weekly_goal_id?: number;
   review?: Review;
   priority?: number;
   due_date?: string;
@@ -47,9 +47,8 @@ export interface TaskCreate {
   title: string;
   category: 'research' | 'coding' | 'admin' | 'networking';
   time_hours: number;
-  goal: string;
+  goal_id: number;  // Required - tasks must belong to a goal
   artifact: 'article' | 'notes' | 'code';
-  weekly_goal_id?: number;
   review?: Review;
   priority?: number;
   due_date?: string;
@@ -94,10 +93,12 @@ export interface WeeklyGoalCreate {
 // Goal Onboarding interfaces
 export interface GoalSubmission {
   goal: string;
+  goal_id?: number;  // If provided, updates existing goal instead of creating new one
   // Note: timeframe, hours, and energy preferences inferred from weekly feedback analysis
 }
 
 export interface GoalValidationResponse {
+  goal_id: number;  // ID of the created goal
   is_valid: boolean;
   validation_details: {
     specific: boolean;
@@ -141,15 +142,24 @@ export interface TaskSuggestionResponse {
   weekly_breakdown?: string;
 }
 
-export interface OnboardingGoal {
+// Unified Goal interface
+export interface Goal {
   id: number;
   user_id: number;
   goal: string;
-  timeframe: string;
+  timeframe?: string;
+  category?: string;
   is_validated: boolean;
   validation_feedback?: string;
   created_at: string;
   tasks_generated: boolean;
+  task_ids: number[];
+}
+
+export interface GoalCreate {
+  goal: string;
+  timeframe?: string;
+  category?: string;
 }
 
 // API functions
@@ -237,11 +247,11 @@ export async function addTaskReview(taskId: number, review: Review): Promise<voi
   }
 }
 
-export async function addWeeklyReview(weeklyGoalId: number, review: Review): Promise<void> {
+export async function addWeeklyReview(goalId: number, review: Review): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/weekly-goals/review`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ weekly_goal_id: weeklyGoalId, ...review }),
+    body: JSON.stringify({ goal_id: goalId, ...review }),
   });
   if (!response.ok) {
     throw new Error('Failed to add weekly review');
@@ -289,12 +299,56 @@ export async function createTasksFromSuggestions(
   return response.json();
 }
 
-export async function getOnboardingGoals(): Promise<OnboardingGoal[]> {
+export async function getOnboardingGoals(): Promise<Goal[]> {
   const response = await fetch(`${API_BASE_URL}/onboarding/goals`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
     throw new Error('Failed to fetch onboarding goals');
+  }
+  return response.json();
+}
+
+// Unified Goals API
+export async function getGoals(): Promise<Goal[]> {
+  const response = await fetch(`${API_BASE_URL}/goals`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch goals');
+  }
+  return response.json();
+}
+
+export async function createGoal(goal: GoalCreate): Promise<Goal> {
+  const response = await fetch(`${API_BASE_URL}/goals`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(goal),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create goal');
+  }
+  return response.json();
+}
+
+export async function getGoal(goalId: number): Promise<Goal> {
+  const response = await fetch(`${API_BASE_URL}/goals/${goalId}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch goal');
+  }
+  return response.json();
+}
+
+export async function deleteGoal(goalId: number): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/goals/${goalId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete goal');
   }
   return response.json();
 }

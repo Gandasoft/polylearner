@@ -7,3 +7,4 @@ web/dist/
 app/__pycache__/
 app/*.pyc
 __pycache__/
+app/firestore-config.json

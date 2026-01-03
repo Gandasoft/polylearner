@@ -13,3 +13,4 @@ google-auth-httplib2==0.2.0
 pyjwt==2.8.0
 email-validator==2.1.0
 httpx==0.26.0
+google-cloud-firestore==2.14.0

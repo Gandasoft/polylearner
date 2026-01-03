@@ -31,6 +31,7 @@ export default function GoalOnboarding() {
   
   // Form data
   const [goal, setGoal] = useState('');
+  const [originalGoalFromValidation, setOriginalGoalFromValidation] = useState('');
   const [goalId, setGoalId] = useState<number | null>(null);
   
   // Validation result
@@ -47,16 +48,21 @@ export default function GoalOnboarding() {
     try {
       const submission: GoalSubmission = {
         goal: goal.trim(),
+        goal_id: goalId || undefined,  // Pass existing goal_id if we have one
       };
       
       const result = await validateGoal(submission);
       setValidationResult(result);
+      setGoalId(result.goal_id);  // Store the goal_id from validation
+      setOriginalGoalFromValidation(goal.trim());  // Store original goal to detect changes
       setStep('validation');
     } catch (error) {
       console.error('Goal analysis error:', error);
       
       // Create a fallback result that allows user to proceed
+      // Note: No goal_id since validation failed - will be created when generating tasks
       const fallbackResult: GoalValidationResponse = {
+        goal_id: 0,  // Placeholder - will be created during task generation
         is_valid: false,
         validation_details: {
           specific: goal.length > 20,
@@ -81,6 +87,8 @@ export default function GoalOnboarding() {
       };
       
       setValidationResult(fallbackResult);
+      setGoalId(null);  // Reset goal_id since validation failed
+      setOriginalGoalFromValidation(goal.trim());  // Store original goal to detect changes
       setStep('validation');
     } finally {
       setLoading(false);
@@ -94,11 +102,12 @@ export default function GoalOnboarding() {
     try {
       const submission: GoalSubmission = {
         goal: goal.trim(),
+        goal_id: goalId || undefined,  // Pass the goal_id from validation to update existing goal
       };
       
       const result = await suggestTasks(submission);
+      setGoalId(result.goal_id);  // Update with returned goal_id (should be same as before)
       setTaskSuggestions(result);
-      setGoalId(result.goal_id);  // Store the goal_id from the response
       // Select all tasks by default
       setSelectedTasks(new Set(result.suggested_tasks.map((_, idx) => idx)));
       setStep('tasks');
@@ -389,7 +398,11 @@ export default function GoalOnboarding() {
                 <Button variant="outline" onClick={() => setStep('goal-input')}>
                   Edit Goal
                 </Button>
-                <Button onClick={handleGenerateTasks} disabled={loading} className="flex-1">
+                <Button 
+                  onClick={handleGenerateTasks} 
+                  disabled={loading} 
+                  className="flex-1"
+                >
                   {loading ? 'Generating Tasks...' : 'Generate Task Breakdown'} <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </div>

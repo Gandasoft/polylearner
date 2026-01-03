@@ -71,9 +71,8 @@ class TaskCreate(BaseModel):
     title: str
     category: TaskCategory
     time_hours: float
-    goal: str
+    goal_id: int  # Required - tasks must belong to a goal
     artifact: TaskArtifact
-    weekly_goal_id: Optional[int] = None
     review: Optional[Review] = None
     priority: Optional[int] = Field(default=5, ge=1, le=10)
     due_date: Optional[str] = None
@@ -81,30 +80,36 @@ class TaskCreate(BaseModel):
 
 class Task(TaskCreate):
     id: int
+    goal: Optional[str] = None  # Denormalized for display, derived from goal_id
 
 
-class WeeklyGoalBase(BaseModel):
-    week_number: int = Field(..., ge=1, le=53)
+# Unified Goal Models
+class GoalBase(BaseModel):
     goal: str
+    timeframe: Optional[str] = None
+    category: Optional[str] = None
 
 
-class WeeklyGoalCreate(WeeklyGoalBase):
+class GoalCreate(GoalBase):
     pass
 
 
-class WeeklyGoal(WeeklyGoalBase):
+class Goal(GoalBase):
     id: int
-    # list of task IDs associated with this weekly goal
+    user_id: int
+    is_validated: bool = False
+    validation_feedback: Optional[str] = None
+    created_at: datetime
+    tasks_generated: bool = False
     task_ids: List[int] = []
-    weekly_review: Optional[Review] = None
 
 
-class WeeklyReviewCreate(Review):
-    weekly_goal_id: int
+class GoalReviewCreate(Review):
+    goal_id: int
 
 
-class WeeklyReviewResponse(Review):
-    weekly_goal_id: int
+class GoalReviewResponse(Review):
+    goal_id: int
 
 
 class ReviewCreate(Review):
@@ -144,10 +149,12 @@ class WeekScheduleResponse(BaseModel):
 # Goal Validation Models
 class GoalSubmission(BaseModel):
     goal: str
+    goal_id: Optional[int] = None  # If provided, updates existing goal instead of creating new one
     # Note: timeframe, hours, and energy preferences are inferred from weekly feedback analysis
 
 
 class GoalValidationResponse(BaseModel):
+    goal_id: int  # ID of the created/updated goal
     is_valid: bool
     validation_details: Dict[str, bool]
     feedback: str
@@ -182,12 +189,4 @@ class CreateTasksFromSuggestionsRequest(BaseModel):
     goal_id: Optional[int] = None
 
 
-class OnboardingGoal(BaseModel):
-    id: int
-    user_id: int
-    goal: str
-    timeframe: str
-    is_validated: bool
-    validation_feedback: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.now)
-    tasks_generated: bool = False
+

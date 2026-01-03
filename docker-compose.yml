@@ -9,9 +9,14 @@ services:
       - .env
     ports:
       - "8000:8000"
+    volumes:
+      - /home/loki/polylearner-serviceaccount-key.json:/app/serviceaccount-key.json:ro
     environment:
+      - DB_TYPE=${DB_TYPE:-mongodb}
       - MONGO_URI=mongodb://mongo:27017
       - MONGO_DB=polylearner
+      - FIRESTORE_PROJECT_ID=polylearner-app
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceaccount-key.json
       - APP_ENV=dev
       - LLM_PROVIDER=ollama
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
@@ -37,6 +42,11 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=4
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KEEP_ALIVE=10m
     restart: unless-stopped
     # Uncomment the following lines if you have an NVIDIA GPU
     # deploy:

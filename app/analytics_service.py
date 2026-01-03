@@ -745,7 +745,7 @@ Database Schema:
     - artifact (string): Expected output (article, notes, code)
     - priority (int): 1-10, higher is more important
     - due_date (string): Optional deadline
-    - weekly_goal_id (int): Optional link to weekly goal
+    - goal_id (int): Optional link to goal
     - review (object): Optional review data with focus_rate, notes, done_on_time
 
 - Collection: weekly_goals
@@ -1005,9 +1005,9 @@ Keep the answer to 2-3 sentences."""
             if focus_results:
                 insights["average_focus_rate"] = round(focus_results[0]["avg_focus_rate"], 1)
             
-            # Weekly goals
-            total_goals = await self.db.weekly_goals.count_documents({})
-            insights["total_weekly_goals"] = total_goals
+            # Goals count
+            total_goals = await self.db.goals.count_documents({})
+            insights["total_goals"] = total_goals
             
             # Recent activity (tasks created in last 30 days)
             from datetime import datetime, timedelta
