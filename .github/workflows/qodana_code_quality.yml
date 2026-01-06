@@ -30,3 +30,35 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1352235310 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
+      - name: 'Send Qodana Results to Slack'
+        if: always()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "Qodana Code Quality Scan Results",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Qodana Code Quality Scan Results*\n Branch: `${{ github.ref_name }}`\n Commit: `${{ github.sha }}`"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://qodana.cloud/project/${{ github.repository }}|View Full Results on Qodana Cloud>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Triggered by: ${{ github.actor }}\nStatus: ${{ job.status }}"
+                  }
+                }
+              ]
+            }
