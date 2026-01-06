@@ -24,12 +24,20 @@ jobs:
           pip install -r app/requirements.txt
           cd web && npm install && cd ..
       - name: 'Qodana Scan'
+        id: qodana
         uses: JetBrains/qodana-action@v2025.2
         with:
           pr-mode: false
+          upload-result: true
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1352235310 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
+      - name: 'Extract Qodana Report URL'
+        id: extract_url
+        run: |
+          # Extract the report URL from the Qodana action output stored in the artifact or from the environment
+          REPORT_URL=$(echo "${{ steps.qodana.outputs.qodana-report-url }}" || echo "https://qodana.cloud")
+          echo "qodana_report_url=${REPORT_URL}" >> $GITHUB_OUTPUT
       - name: 'Send Qodana Results to Slack'
         if: always()
         uses: slackapi/slack-github-action@v1.24.0
@@ -49,7 +57,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "<https://qodana.cloud/project/${{ github.repository }}|View Full Results on Qodana Cloud>"
+                    "text": "<${{ steps.extract_url.outputs.qodana_report_url }}|View Scan Results on Qodana Cloud>"
                   }
                 },
                 {

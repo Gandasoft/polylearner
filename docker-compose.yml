@@ -28,9 +28,9 @@ services:
       - CUSTOM_LLM_BASE_URL=${CUSTOM_LLM_BASE_URL:-}
       - CUSTOM_LLM_API_KEY=${CUSTOM_LLM_API_KEY:-}
       - CUSTOM_LLM_MODEL=${CUSTOM_LLM_MODEL:-default}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
-    depends_on:
+       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+     depends_on:
       - mongo
       - ollama
     restart: unless-stopped
@@ -48,15 +48,7 @@ services:
       - OLLAMA_FLASH_ATTENTION=1
       - OLLAMA_KEEP_ALIVE=10m
     restart: unless-stopped
-    # Uncomment the following lines if you have an NVIDIA GPU
     # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-  
   mongo:
     image: mongo:7
     container_name: polylearner-mongo
