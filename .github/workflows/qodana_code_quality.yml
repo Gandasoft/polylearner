@@ -22,7 +22,6 @@ jobs:
       - name: 'Install dependencies'
         run: |
           pip install -r app/requirements.txt
-          cd web && npm install && cd ..
       - name: 'Qodana Scan'
         id: qodana
         uses: JetBrains/qodana-action@v2025.2
