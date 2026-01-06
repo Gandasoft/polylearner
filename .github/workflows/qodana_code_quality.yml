@@ -34,7 +34,6 @@ jobs:
         if: always()
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           payload: |
             {
               "text": "Qodana Code Quality Scan Results",
@@ -43,7 +42,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Qodana Code Quality Scan Results*\n Branch: `${{ github.ref_name }}`\n Commit: `${{ github.sha }}`"
+                    "text": "*Qodana Code Quality Scan Results*\nBranch: `${{ github.ref_name }}`\nCommit: `${{ github.sha }}`"
                   }
                 },
                 {
@@ -62,3 +61,6 @@ jobs:
                 }
               ]
             }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
